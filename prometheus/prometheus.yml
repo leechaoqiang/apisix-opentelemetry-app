@@ -1,0 +1,43 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: []
+
+rule_files: []
+
+scrape_configs:
+  # Prometheus 自身监控
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  # APISIX 指标
+  - job_name: "apisix"
+    static_configs:
+      - targets: ["apisix:9091"]
+    metrics_path: /apisix/prometheus/metrics
+
+  # Java Agent 指标 (需要添加 micrometer 依赖)
+  - job_name: "java-agent"
+    static_configs:
+      - targets: ["host.docker.internal:8082"]
+    metrics_path: /actuator/prometheus
+
+  # Go Agent 指标
+  - job_name: "go-agent"
+    static_configs:
+      - targets: ["host.docker.internal:8081"]
+
+  # Loki 指标
+  - job_name: "loki"
+    static_configs:
+      - targets: ["loki:3100"]
+
+  # Jaeger 指标
+  - job_name: "jaeger"
+    static_configs:
+      - targets: ["jaeger:14269"]

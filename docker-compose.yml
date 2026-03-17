@@ -1,0 +1,175 @@
+services:
+  # ===========================================
+  # 基础设施服务
+  # ===========================================
+
+  # etcd - APISIX 配置存储
+  etcd:
+    container_name: etcd
+    image: quay.io/coreos/etcd:v3.5.12
+    volumes:
+      - ./etcd-data:/etcd-data
+    ports:
+      - "2379:2379"
+      - "2380:2380"
+    environment:
+      - ETCD_ENABLE_V2=true
+      - ALLOW_NONE_AUTHENTICATION=yes
+      - ETCD_ADVERTISE_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_LISTEN_CLIENT_URLS=http://0.0.0.0:2379
+      - ETCD_LISTEN_PEER_URLS=http://0.0.0.0:2380
+      - ETCD_NAME=etcd-node1
+      - ETCD_DATA_DIR=/etcd-data
+      - ETCD_INITIAL_CLUSTER_STATE=new
+    command: /usr/local/bin/etcd
+    networks:
+      - observability-net
+    labels:
+      logging: "promtail"
+      service: "etcd"
+
+  # APISIX 网关
+  apisix:
+    container_name: apisix
+    image: apache/apisix:3.13.0-ubuntu
+    command:
+      - /bin/sh
+      - -c
+      - |
+        apisix init
+        apisix start
+    ports:
+      - "9080:9080"   # HTTP 端口
+      - "9180:9180"   # Admin API
+      - "9091:9091"   # Prometheus 指标
+    volumes:
+      - ./apisix-config/config.yaml:/usr/local/apisix/conf/config.yaml
+    environment:
+      - APISIX_PLUGINS=opentelemetry,limit-req,ip-restriction,cors,http-logger
+    depends_on:
+      etcd:
+        condition: service_started
+      jaeger:
+        condition: service_started
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - observability-net
+    labels:
+      logging: "promtail"
+      service: "apisix"
+
+  # ===========================================
+  # 可观测性服务
+  # ===========================================
+
+  # Jaeger - 链路追踪
+  jaeger:
+    container_name: jaeger
+    image: jaegertracing/all-in-one:1.62.0
+    ports:
+      - "16686:16686"  # UI
+      - "4317:4317"    # OTel gRPC
+      - "4318:4318"    # OTel HTTP
+      - "14269:14269"  # Metrics
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+      - LOG_LEVEL=info
+    networks:
+      - observability-net
+    labels:
+      logging: "promtail"
+      service: "jaeger"
+
+  # Prometheus - 指标存储
+  prometheus:
+    container_name: prometheus
+    image: prom/prometheus:v2.54.1
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=15d'
+      - '--web.enable-lifecycle'
+      - '--web.enable-admin-api'
+    networks:
+      - observability-net
+    labels:
+      logging: "promtail"
+      service: "prometheus"
+
+  # Loki - 日志存储
+  loki:
+    container_name: loki
+    image: grafana/loki:3.1.0
+    ports:
+      - "3100:3100"
+      - "9096:9096"
+    volumes:
+      - ./loki/loki-config.yaml:/etc/loki/local-config.yaml:ro
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - observability-net
+    labels:
+      logging: "promtail"
+      service: "loki"
+
+  # Promtail - 日志收集代理
+  promtail:
+    container_name: promtail
+    image: grafana/promtail:3.1.0
+    ports:
+      - "1514:1514"
+    volumes:
+      - ./loki/promtail-config.yaml:/etc/promtail/config.yaml:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    command: -config.file=/etc/promtail/config.yaml
+    depends_on:
+      - loki
+    networks:
+      - observability-net
+    labels:
+      logging: "promtail"
+      service: "promtail"
+
+  # Grafana - 可视化面板
+  grafana:
+    container_name: grafana
+    image: grafana/grafana:11.2.0
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana-data:/var/lib/grafana
+      - ./grafana-data/provisioning:/etc/grafana/provisioning:ro
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-piechart-panel
+      - GF_FEATURE_TOGGLES_ENABLE=traceToLogs
+    depends_on:
+      - prometheus
+      - loki
+      - jaeger
+    networks:
+      - observability-net
+    labels:
+      logging: "promtail"
+      service: "grafana"
+
+networks:
+  observability-net:
+    driver: bridge
+    name: observability-net
+
+volumes:
+  prometheus-data:
+    name: apisix-prometheus-data
+  loki-data:
+    name: apisix-loki-data

@@ -1,0 +1,24 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: java-agent
+
+# Ollama 配置
+ollama:
+  base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+  model: ${OLLAMA_MODEL:qwen3:4b}
+  timeout: 60000
+
+# OpenTelemetry 配置
+otel:
+  service:
+    name: ${OTEL_SERVICE_NAME:java-service}
+  exporter:
+    otlp:
+      endpoint: ${OTEL_EXPORTER_OTLP_ENDPOINT:http://localhost:4317}
+
+logging:
+  level:
+    com.example.javaagent: DEBUG

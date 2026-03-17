@@ -1,0 +1,33 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mvn clean:*)",
+      "Bash(mvn package:*)",
+      "Bash(timeout 15 java -jar target/java-agent-1.0.0.jar)",
+      "Bash(go build:*)",
+      "Bash(go mod:*)",
+      "Bash(cd:*)",
+      "Bash(pkill -f \"./go-app\")",
+      "Bash(pkill -f \"go-agent/go-app\")",
+      "Bash(docker-compose config:*)",
+      "Bash(docker-compose down:*)",
+      "Bash(docker-compose up:*)",
+      "Bash(docker-compose ps:*)",
+      "Bash(curl -s http://localhost:3100/ready)",
+      "Bash(rm -f /Users/lichaoqiang/project/infra-tools/apisix/logs/apisix/*.sock 2)",
+      "Bash(/dev/null docker:*)",
+      "Bash(docker stop:*)",
+      "Bash(curl -s http://localhost:9080 -o /dev/null -w \"%{http_code}\")",
+      "Bash(curl -s http://localhost:9180/apisix/admin/routes -H \"X-API-KEY: zROmjQmfUScormfShcCxRsbwApcdSDqC\")",
+      "Bash(curl -s http://localhost:9091/apisix/prometheus/metrics)",
+      "Bash(curl -s http://localhost:16686/api/services)",
+      "Bash(curl:*)",
+      "Bash(python3 -c \"import sys,json; data=json.load\\(sys.stdin\\); print\\(''''Traces found:'''', len\\(data.get\\(''''data'''', []\\)\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; data=json.load\\(sys.stdin\\); print\\(''''Labels:'''', data.get\\(''''data'''', []\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; data=json.load\\(sys.stdin\\); print\\(''''Services:'''', data.get\\(''''data'''', []\\)\\)\")",
+      "Bash(python3 -c \"import sys,json; data=json.load\\(sys.stdin\\); print\\(''''APISIX container logs:'''', len\\(data.get\\(''''data'''', {}\\).get\\(''''result'''', []\\)\\)\\)\")",
+      "Bash(python3 -m json.tool)",
+      "Bash(python3 -c \"import sys,json; [print\\(f''''   - {s}''''\\) for s in json.load\\(sys.stdin\\).get\\(''''data'''',[]\\)]\")"
+    ]
+  }
+}

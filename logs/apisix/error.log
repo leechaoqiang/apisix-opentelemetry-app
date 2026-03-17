@@ -1,0 +1,1 @@
+2026/03/17 07:53:55 [emerg] 54#54: chmod() "/usr/local/apisix/logs/worker_events.sock" failed (22: Invalid argument)

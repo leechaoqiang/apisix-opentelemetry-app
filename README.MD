@@ -373,3 +373,11 @@ plugins:
       route: "$uri"
       status: "$status"
 ```
+
+## 运行效果图
+- jaeger trace
+<img src="./docs/jaeager-trace.png" width="100%" />
+- loki logs
+<img src="./docs/loki-logs.png" width="100%" />
+- full trace
+<img src="./docs/full-trace.png" width="100%" />
